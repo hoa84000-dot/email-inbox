@@ -258,10 +258,11 @@
     <div class="input-row">
       <div class="input-wrap">
         <input type="text" id="username" placeholder="username" autocomplete="off" spellcheck="false">
-        <span class="domain-badge" id="domainBadge">@yourdomain.com</span>
+        <select id="domainSelect" style="border:none;background:#e8e8f0;color:#555;padding:10px 8px;font-size:14px;border-left:1px solid #ddd;cursor:pointer;outline:none;"></select>
       </div>
       <button class="copy-btn" id="copyBtn" title="Copy địa chỉ email">📋</button>
       <button class="btn btn-primary" id="checkBtn">Check</button>
+      <button class="btn" id="allBtn" style="background:#e8e8f0;color:#555;border:1.5px solid #ddd;">Tất cả</button>
     </div>
   </div>
 
@@ -285,10 +286,13 @@
 
 <script>
   // ============================================================
-  // CẤU HÌNH — thay bằng thông tin thực của bạn
+  // CẤU HÌNH — thêm domain mới vào mảng DOMAINS
   // ============================================================
   const API_URL = "https://api-worker.hoa84000.workers.dev";
-  const DOMAIN  = "lamthoi.site";
+  const DOMAINS = [
+    "lamthoi.site",
+    // "domain2.com",   // ← thêm domain mới ở đây
+  ];
   // ============================================================
 
   const REFRESH_INTERVAL = 10000; // 10 giây
@@ -298,16 +302,23 @@
   let knownIds = new Set();
   let allEmails = [];
 
-  // Khởi tạo
-  document.getElementById("domainBadge").textContent = `@${DOMAIN}`;
+  // Khởi tạo dropdown domain
+  const domainSelect = document.getElementById("domainSelect");
+  DOMAINS.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = "@" + d;
+    domainSelect.appendChild(opt);
+  });
 
   document.getElementById("checkBtn").addEventListener("click", () => {
     const username = document.getElementById("username").value.trim();
+    const domain = document.getElementById("domainSelect").value;
     if (!username) { showToast("Vui lòng nhập username"); return; }
     const btn = document.getElementById("checkBtn");
     btn.textContent = "Đang tải...";
     btn.disabled = true;
-    startChecking(`${username}@${DOMAIN}`).finally(() => {
+    startChecking(`${username}@${domain}`).finally(() => {
       btn.textContent = "Check";
       btn.disabled = false;
     });
@@ -321,6 +332,42 @@
     if (!currentEmail) { showToast("Chưa có địa chỉ để copy"); return; }
     navigator.clipboard.writeText(currentEmail).then(() => showToast("Đã copy " + currentEmail));
   });
+
+  document.getElementById("allBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("allBtn");
+    btn.textContent = "Đang tải...";
+    btn.disabled = true;
+    currentEmail = "__all__";
+    knownIds = new Set();
+    clearInterval(refreshTimer);
+    document.getElementById("statusText").textContent = "Tất cả email";
+    document.getElementById("refreshIndicator").style.display = "flex";
+    document.getElementById("emailList").innerHTML = `<div class="empty-state"><div class="icon">⏳</div>Đang tải...</div>`;
+    await fetchAllEmails();
+    btn.textContent = "Tất cả";
+    btn.disabled = false;
+    refreshTimer = setInterval(fetchAllEmails, REFRESH_INTERVAL);
+  });
+
+  async function fetchAllEmails() {
+    const dot = document.getElementById("refreshDot");
+    const refreshText = document.getElementById("refreshText");
+    dot.className = "dot loading";
+    refreshText.textContent = "đang tải...";
+    try {
+      const res = await fetch(`${API_URL}?all=1`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const emails = await res.json();
+      const newOnes = emails.filter(e => !knownIds.has(e.id));
+      newOnes.forEach(e => knownIds.add(e.id));
+      renderEmails(emails, newOnes.map(e => e.id));
+    } catch (err) {
+      document.getElementById("statusText").textContent = `Lỗi: ${err.message}`;
+    } finally {
+      dot.className = "dot";
+      refreshText.textContent = "auto-refresh 10s";
+    }
+  }
 
   async function startChecking(email) {
     currentEmail = email;
