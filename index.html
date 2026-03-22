@@ -422,11 +422,10 @@
       return `
         <div class="email-card ${isNew ? "new" : ""}" data-id="${email.id}" onclick="toggleEmail(this)">
           <div class="card-header">
-            <div class="from">${escapeHtml(email.from)}${isNew ? '<span class="new-badge">NEW</span>' : ""}</div>
+            <div class="from">${escapeHtml(email.from)} <span style="font-size:12px;color:#999;font-weight:400;">→ ${escapeHtml(email.to)}</span>${isNew ? '<span class="new-badge">NEW</span>' : ""}</div>
             <div class="time">${time}</div>
           </div>
           <div class="subject">${escapeHtml(email.subject)}</div>
-          <div style="font-size:12px;color:#999;margin-top:3px;">→ ${escapeHtml(email.to)}</div>
           <div class="email-body">${escapeHtml(email.body)}</div>
         </div>
       `;
