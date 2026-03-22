@@ -304,7 +304,13 @@
   document.getElementById("checkBtn").addEventListener("click", () => {
     const username = document.getElementById("username").value.trim();
     if (!username) { showToast("Vui lòng nhập username"); return; }
-    startChecking(`${username}@${DOMAIN}`);
+    const btn = document.getElementById("checkBtn");
+    btn.textContent = "Đang tải...";
+    btn.disabled = true;
+    startChecking(`${username}@${DOMAIN}`).finally(() => {
+      btn.textContent = "Check";
+      btn.disabled = false;
+    });
   });
 
   document.getElementById("username").addEventListener("keydown", (e) => {
@@ -316,7 +322,7 @@
     navigator.clipboard.writeText(currentEmail).then(() => showToast("Đã copy " + currentEmail));
   });
 
-  function startChecking(email) {
+  async function startChecking(email) {
     currentEmail = email;
     knownIds = new Set();
     allEmails = [];
@@ -324,8 +330,9 @@
 
     document.getElementById("refreshIndicator").style.display = "flex";
     document.getElementById("statusText").textContent = `Inbox: ${email}`;
+    document.getElementById("emailList").innerHTML = `<div class="empty-state"><div class="icon">⏳</div>Đang tải email...</div>`;
 
-    fetchEmails();
+    await fetchEmails();
     refreshTimer = setInterval(fetchEmails, REFRESH_INTERVAL);
   }
 
