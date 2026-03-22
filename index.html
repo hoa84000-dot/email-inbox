@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Inbox</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 { font-size: 18px; font-weight: 600; }
+
+    .container { max-width: 800px; margin: 32px auto; padding: 0 16px; }
+
+    .search-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      margin-bottom: 24px;
+    }
+
+    .search-box label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fafafa;
+    }
+
+    .input-wrap:focus-within {
+      border-color: #4f46e5;
+      background: #fff;
+    }
+
+    #username {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 12px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .domain-badge {
+      background: #e8e8f0;
+      color: #555;
+      padding: 10px 12px;
+      font-size: 14px;
+      white-space: nowrap;
+      border-left: 1px solid #ddd;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: #4f46e5; color: #fff; }
+
+    .copy-btn {
+      background: none;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #555;
+      transition: all .15s;
+    }
+
+    .copy-btn:hover { border-color: #4f46e5; color: #4f46e5; }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 12px;
+      min-height: 20px;
+    }
+
+    .refresh-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    .dot.loading { background: #f59e0b; animation: spin .8s linear infinite; border-radius: 0; clip-path: none; }
+
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+    @keyframes spin { to { transform: rotate(360deg) } }
+
+    .email-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .email-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      cursor: pointer;
+      transition: box-shadow .15s, transform .1s;
+      border-left: 3px solid transparent;
+    }
+
+    .email-card:hover {
+      box-shadow: 0 3px 10px rgba(0,0,0,.12);
+      transform: translateY(-1px);
+    }
+
+    .email-card.new { border-left-color: #4f46e5; }
+
+    .email-card.open { border-left-color: #22c55e; }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .from {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60%;
+    }
+
+    .time {
+      font-size: 12px;
+      color: #999;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .subject {
+      font-size: 14px;
+      color: #444;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .new-badge {
+      display: inline-block;
+      background: #4f46e5;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* Email body panel */
+    .email-body {
+      display: none;
+      background: #f8f8fc;
+      border-top: 1px solid #eee;
+      padding: 14px 18px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #333;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+
+    .email-card.open .email-body { display: block; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+      font-size: 15px;
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(40px);
+      background: #1a1a2e;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all .3s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>📬</div>
+  <h1>Email Inbox</h1>
+</header>
+
+<div class="container">
+  <div class="search-box">
+    <label>Nhập địa chỉ email để check inbox:</label>
+    <div class="input-row">
+      <div class="input-wrap">
+        <input type="text" id="username" placeholder="username" autocomplete="off" spellcheck="false">
+        <span class="domain-badge" id="domainBadge">@yourdomain.com</span>
+      </div>
+      <button class="copy-btn" id="copyBtn" title="Copy địa chỉ email">📋</button>
+      <button class="btn btn-primary" id="checkBtn">Check</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span id="statusText"></span>
+    <div class="refresh-indicator" id="refreshIndicator" style="display:none">
+      <div class="dot" id="refreshDot"></div>
+      <span id="refreshText">auto-refresh 10s</span>
+    </div>
+  </div>
+
+  <div class="email-list" id="emailList">
+    <div class="empty-state">
+      <div class="icon">📭</div>
+      Nhập địa chỉ email và nhấn Check để xem email
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================================
+  // CẤU HÌNH — thay bằng thông tin thực của bạn
+  // ============================================================
+  const API_URL = "https://api-worker.hoa84000.workers.dev";
+  const DOMAIN  = "lamthoi.site";
+  // ============================================================
+
+  const REFRESH_INTERVAL = 10000; // 10 giây
+
+  let currentEmail = null;
+  let refreshTimer = null;
+  let knownIds = new Set();
+  let allEmails = [];
+
+  // Khởi tạo
+  document.getElementById("domainBadge").textContent = `@${DOMAIN}`;
+
+  document.getElementById("checkBtn").addEventListener("click", () => {
+    const username = document.getElementById("username").value.trim();
+    if (!username) { showToast("Vui lòng nhập username"); return; }
+    startChecking(`${username}@${DOMAIN}`);
+  });
+
+  document.getElementById("username").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("checkBtn").click();
+  });
+
+  document.getElementById("copyBtn").addEventListener("click", () => {
+    if (!currentEmail) { showToast("Chưa có địa chỉ để copy"); return; }
+    navigator.clipboard.writeText(currentEmail).then(() => showToast("Đã copy " + currentEmail));
+  });
+
+  function startChecking(email) {
+    currentEmail = email;
+    knownIds = new Set();
+    allEmails = [];
+    clearInterval(refreshTimer);
+
+    document.getElementById("refreshIndicator").style.display = "flex";
+    document.getElementById("statusText").textContent = `Inbox: ${email}`;
+
+    fetchEmails();
+    refreshTimer = setInterval(fetchEmails, REFRESH_INTERVAL);
+  }
+
+  async function fetchEmails() {
+    const dot = document.getElementById("refreshDot");
+    const refreshText = document.getElementById("refreshText");
+
+    dot.className = "dot loading";
+    refreshText.textContent = "đang tải...";
+
+    try {
+      const res = await fetch(`${API_URL}?email=${encodeURIComponent(currentEmail)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const emails = await res.json();
+
+      const newOnes = emails.filter(e => !knownIds.has(e.id));
+      newOnes.forEach(e => knownIds.add(e.id));
+      allEmails = emails;
+
+      renderEmails(emails, newOnes.map(e => e.id));
+    } catch (err) {
+      document.getElementById("statusText").textContent = `Lỗi: ${err.message}`;
+    } finally {
+      dot.className = "dot";
+      refreshText.textContent = "auto-refresh 10s";
+    }
+  }
+
+  function renderEmails(emails, newIds = []) {
+    const list = document.getElementById("emailList");
+
+    if (emails.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">📭</div>Chưa có email nào</div>`;
+      return;
+    }
+
+    list.innerHTML = emails.map(email => {
+      const isNew = newIds.includes(email.id);
+      const time = formatTime(email.timestamp || email.date);
+      return `
+        <div class="email-card ${isNew ? "new" : ""}" data-id="${email.id}" onclick="toggleEmail(this)">
+          <div class="card-header">
+            <div class="from">${escapeHtml(email.from)}${isNew ? '<span class="new-badge">NEW</span>' : ""}</div>
+            <div class="time">${time}</div>
+          </div>
+          <div class="subject">${escapeHtml(email.subject)}</div>
+          <div class="email-body">${escapeHtml(email.body)}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function toggleEmail(card) {
+    const isOpen = card.classList.contains("open");
+    card.classList.remove("new");
+    card.classList.toggle("open", !isOpen);
+  }
+
+  function formatTime(value) {
+    if (!value) return "";
+    const d = typeof value === "number" ? new Date(value) : new Date(value);
+    if (isNaN(d)) return String(value);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "vừa xong";
+    if (diffMin < 60) return `${diffMin} phút trước`;
+    if (diffMin < 1440) return `${Math.floor(diffMin/60)} giờ trước`;
+    return d.toLocaleDateString("vi-VN");
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2500);
+  }
+</script>
+
+</body>
+</html>
