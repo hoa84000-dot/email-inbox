@@ -210,10 +210,19 @@
       font-size: 14px;
       line-height: 1.7;
       color: #333;
-      white-space: pre-wrap;
       word-break: break-word;
       margin-top: 10px;
       border-radius: 6px;
+    }
+
+    .email-body.plaintext {
+      white-space: pre-wrap;
+    }
+
+    .email-body iframe {
+      width: 100%;
+      border: none;
+      display: block;
     }
 
     .email-card.open .email-body { display: block; }
@@ -430,7 +439,11 @@
             <div class="time">${time}</div>
           </div>
           <div class="subject">${escapeHtml(email.subject)}</div>
-          <div class="email-body">${escapeHtml(email.body)}</div>
+          <div class="email-body ${email.isHtml ? "" : "plaintext"}">${
+            email.isHtml
+              ? `<iframe sandbox="allow-same-origin" srcdoc="${escapeAttr(email.body)}" onload="autoResizeIframe(this)"></iframe>`
+              : escapeHtml(email.body)
+          }</div>
         </div>
       `;
     }).join("");
@@ -462,6 +475,19 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function escapeAttr(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  }
+
+  function autoResizeIframe(iframe) {
+    try {
+      iframe.style.height = iframe.contentDocument.body.scrollHeight + "px";
+    } catch (_) {
+      iframe.style.height = "400px";
+    }
   }
 
   function showToast(msg) {
