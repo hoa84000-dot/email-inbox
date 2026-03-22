@@ -410,6 +410,10 @@
 
   function renderEmails(emails, newIds = []) {
     const list = document.getElementById("emailList");
+    // Lưu lại các card đang mở
+    const openIds = new Set(
+      [...list.querySelectorAll(".email-card.open")].map(el => el.dataset.id)
+    );
 
     if (emails.length === 0) {
       list.innerHTML = `<div class="empty-state"><div class="icon">📭</div>Chưa có email nào</div>`;
@@ -420,9 +424,9 @@
       const isNew = newIds.includes(email.id);
       const time = formatTime(email.timestamp || email.date);
       return `
-        <div class="email-card ${isNew ? "new" : ""}" data-id="${email.id}" onclick="toggleEmail(this)">
+        <div class="email-card ${isNew ? "new" : ""} ${openIds.has(email.id) ? "open" : ""}" data-id="${email.id}" onclick="toggleEmail(this)">
           <div class="card-header">
-            <div class="from">${escapeHtml(email.from)} <span style="font-size:12px;color:#999;font-weight:400;">→ ${escapeHtml(email.to)}</span>${isNew ? '<span class="new-badge">NEW</span>' : ""}</div>
+            <div class="from">${escapeHtml(email.from)} <span style="font-weight:700;font-style:italic;">→ ${escapeHtml(email.to)}</span>${isNew ? '<span class="new-badge">NEW</span>' : ""}</div>
             <div class="time">${time}</div>
           </div>
           <div class="subject">${escapeHtml(email.subject)}</div>
