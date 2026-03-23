@@ -536,7 +536,7 @@
           <div class="subject">${escapeHtml(email.subject)}</div>
           <div class="email-body ${email.isHtml ? "" : "plaintext"}">${
             email.isHtml
-              ? `<iframe sandbox="allow-same-origin" srcdoc="${escapeAttr(email.body)}" onload="autoResizeIframe(this)"></iframe>`
+              ? `<iframe sandbox="allow-same-origin" srcdoc="${escapeAttr('<meta charset="UTF-8">' + email.body)}" onload="autoResizeIframe(this)"></iframe>`
               : escapeHtml(email.body)
           }</div>
         </div>
