@@ -252,12 +252,74 @@
     }
 
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Password Modal */
+    .pw-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .pw-overlay.show { display: flex; }
+    .pw-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 28px 22px;
+      width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .pw-box h3 { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+    .pw-box p { font-size: 13px; color: #888; margin-bottom: 16px; }
+    .pw-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 6px;
+    }
+    .pw-box input:focus { border-color: #6c63ff; }
+    .pw-error { font-size: 12px; color: #e74c3c; min-height: 18px; margin-bottom: 10px; }
+    .pw-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .pw-actions button {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .pw-cancel { background: #e8e8f0; color: #555; }
+    .pw-confirm { background: #1a1a2e; color: #fff; }
+    .pw-confirm:hover { background: #2d2d4e; }
   </style>
 </head>
 <body>
 
+<!-- Password Modal -->
+<div class="pw-overlay" id="pwOverlay">
+  <div class="pw-box">
+    <h3>🔒 Xác thực quyền truy cập</h3>
+    <p>Nhập mật khẩu để xem tất cả email</p>
+    <input type="password" id="pwInput" placeholder="Mật khẩu..." autocomplete="off">
+    <div class="pw-error" id="pwError"></div>
+    <div class="pw-actions">
+      <button class="pw-cancel" id="pwCancel">Hủy</button>
+      <button class="pw-confirm" id="pwConfirm">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
 <header>
-  <div>📬</div>
+  <div>
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+    </svg>
+  </div>
   <h1>Email Inbox</h1>
 </header>
 
@@ -342,7 +404,17 @@
     navigator.clipboard.writeText(currentEmail).then(() => showToast("Đã copy " + currentEmail));
   });
 
-  document.getElementById("allBtn").addEventListener("click", async () => {
+  document.getElementById("allBtn").addEventListener("click", () => {
+    const overlay = document.getElementById("pwOverlay");
+    const input = document.getElementById("pwInput");
+    const error = document.getElementById("pwError");
+    input.value = "";
+    error.textContent = "";
+    overlay.classList.add("show");
+    input.focus();
+  });
+
+  async function loadAllEmails() {
     const btn = document.getElementById("allBtn");
     btn.textContent = "Đang tải...";
     btn.disabled = true;
@@ -356,6 +428,28 @@
     btn.textContent = "Tất cả";
     btn.disabled = false;
     refreshTimer = setInterval(fetchAllEmails, REFRESH_INTERVAL);
+  }
+
+  document.getElementById("pwConfirm").addEventListener("click", () => {
+    const input = document.getElementById("pwInput");
+    const error = document.getElementById("pwError");
+    if (input.value === "lamthoi@sit3") {
+      document.getElementById("pwOverlay").classList.remove("show");
+      loadAllEmails();
+    } else {
+      error.textContent = "Mật khẩu không đúng, thử lại.";
+      input.value = "";
+      input.focus();
+    }
+  });
+
+  document.getElementById("pwCancel").addEventListener("click", () => {
+    document.getElementById("pwOverlay").classList.remove("show");
+  });
+
+  document.getElementById("pwInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("pwConfirm").click();
+    if (e.key === "Escape") document.getElementById("pwCancel").click();
   });
 
   async function fetchAllEmails() {
